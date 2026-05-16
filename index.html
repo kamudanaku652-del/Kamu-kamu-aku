@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sony C-800G Virtual Studio - 32Bit Pro</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            text-align: center; 
+            background: #090d16; 
+            color: #f8fafc; 
+            padding: 20px; 
+        }
+        .studio-box {
+            max-width: 450px;
+            margin: 40px auto;
+            background: #111827;
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid #1f2937;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .mic-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        .upload-area {
+            border: 2px dashed #4b5563;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            background: #1f2937;
+            cursor: pointer;
+        }
+        .upload-area:hover { border-color: #3b82f6; }
+        input[type="file"] { display: none; }
+        button { 
+            font-size: 16px; 
+            padding: 14px 30px; 
+            margin: 10px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: all 0.2s;
+            width: 80%;
+        }
+        #processBtn { background: #10b981; color: white; }
+        #processBtn:hover { background: #059669; }
+        #downloadBtn { background: #f59e0b; color: white; display: none; }
+        #downloadBtn:hover { background: #d97706; }
+        button:disabled { background: #374151; cursor: not-allowed; opacity: 0.4; }
+        #status { margin: 20px; color: #60a5fa; font-weight: 500; font-size: 14px; }
+        audio { margin-top: 25px; width: 100%; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="studio-box">
+    <div class="mic-badge">⚙️ SONY C-800G REPLICA 32-BIT FLOAT</div>
+    <h2>Audio Transformer PRO</h2>
+    <p style="color: #9ca3af; font-size: 14px; margin-top: -5px;">Ubah file rekaman menjadi Deep Bass & Hening Studio</p>
+    
+    <div class="upload-area" onclick="document.getElementById('audioInput').click()">
+        <span id="uploadLabel">📁 Ketuk untuk Impor File Suara</span>
+        <input type="file" id="audioInput" accept="audio/*">
+    </div>
+
+    <div id="status">Status: Menunggu file diimpor...</div>
+    
+    <button id="processBtn" disabled>🔥 Proses ke Karakter Sony C800G</button>
+    <br>
+    <button id="downloadBtn">📥 Simpan/Unduh Hasil (.wav)</button>
+    
+    <br>
+    <audio id="audioPlayback" controls></audio>
+</div>
+
+<script>
+    let finalAudioUrl = "";
+
+    const audioInput = document.getElementById('audioInput');
+    const uploadLabel = document.getElementById('uploadLabel');
+    const processBtn = document.getElementById('processBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statusDiv = document.getElementById('status');
+    const playback = document.getElementById('audioPlayback');
+
+    // MENDETEKSI INPUT FILE
+    audioInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            uploadLabel.innerText = "✅ Terpasang: " + file.name;
+            statusDiv.innerText = "File siap diproses!";
+            processBtn.disabled = false;
+            downloadBtn.style.display = "none";
+        }
+    };
+
+    // FILTER ULTRA-PREMIUM SONY C-800G
+    function createSonyC800GFilters(audioCtx) {
+        const coolingFilter = audioCtx.createBiquadFilter();
+        coolingFilter.type = "highpass";
+        coolingFilter.frequency.value = 42; 
+
+        const tubeBass = audioCtx.createBiquadFilter();
+        tubeBass.type = "lowshelf";
+        tubeBass.frequency.value = 110; 
+        tubeBass.gain.value = 11.5; // Karakter bass bulat, tebal, berat (Deep Bass)
+
+        const k67Clarity = audioCtx.createBiquadFilter();
+        k67Clarity.type = "peaking";
+        k67Clarity.frequency.value = 4000; 
+        k67Clarity.Q.value = 0.9;
+        k67Clarity.gain.value = 4.5; // Artikulasi vokal maju dan jernih
+
+        const sonyAirSheen = audioCtx.createBiquadFilter();
+        sonyAirSheen.type = "highshelf";
+        sonyAirSheen.frequency.value = 14000; 
+        sonyAirSheen.gain.value = 6.5; // Karakter udara desis mewah mikrofon mahal
+
+        return { coolingFilter, tubeBass, k67Clarity, sonyAirSheen };
+    }
+
+    // PROSES AUDIO UTAMA
+    processBtn.onclick = async () => {
+        statusDiv.innerText = "⏳ Membaca data audio...";
+        processBtn.disabled = true;
+
+        const file = audioInput.files[0];
+        const arrayBuffer = await file.arrayBuffer();
+
+        const baseCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        baseCtx.decodeAudioData(arrayBuffer, async (buffer) => {
+            statusDiv.innerText = "🎛️ Menerapkan Efek Komponen Sony (32-bit Float)...";
+
+            const offlineCtx = new OfflineAudioContext(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+            const source = offlineCtx.createBufferSource();
+            source.buffer = buffer;
+
+            const filters = createSonyC800GFilters(offlineCtx);
+            
+            // Komponen Penguat Volume Otomatis agar suara mantap
+            const compressor = offlineCtx.createDynamicsCompressor();
+            compressor.threshold.value = -14;
+            compressor.knee.value = 24;
+            compressor.ratio.value = 3.5;
+            compressor.attack.value = 0.005;
+            compressor.release.value = 0.15;
+
+            // Rantai Rute Jalur Komponen
+            source.connect(filters.coolingFilter);
+            filters.coolingFilter.connect(filters.tubeBass);
+            filters.tubeBass.connect(filters.k67Clarity);
+            filters.k67Clarity.connect(filters.sonyAirSheen);
+            filters.sonyAirSheen.connect(compressor);
+            compressor.connect(offlineCtx.destination);
+
+            source.start(0);
+            const renderedBuffer = await offlineCtx.startRendering();
+
+            statusDiv.innerText = "✨ Selesai! Menyiapkan file unduhan...";
+            
+            // Mengubah ke file WAV biner asli format IEEE Float 32-bit yang valid
+            const wavBlob = bufferToWav32(renderedBuffer);
+            finalAudioUrl = URL.createObjectURL(wavBlob);
+            
+            playback.src = finalAudioUrl;
+            statusDiv.innerText = "🎉 Audio siap diputar dan diunduh!";
+            processBtn.disabled = false;
+            downloadBtn.style.display = "inline-block";
+            baseCtx.close();
+        }, (err) => {
+            statusDiv.innerText = "Gagal memproses file audio.";
+            alert("Error: Format audio tidak didukung.");
+            processBtn.disabled = false;
+            baseCtx.close();
+        });
+    };
+
+    // GENERATOR FILE WAV FORMAT 3 (32-BIT FLOATING POINT) - FIX LOGIKA DATA BINER
+    function bufferToWav32(buffer) {
+        let numOfChan = buffer.numberOfChannels,
+            sampleRate = buffer.sampleRate,
+            format = 3, // Kode format 3 khusus untuk IEEE Floating Point (32-bit murni)
+            bitDepth = 32;
+        
+        let result;
+        if (numOfChan === 2) {
+            result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+        } else {
+            result = buffer.getChannelData(0);
+        }
+        
+        let bytesPerSample = bitDepth / 8;
+        let bufferArr = new ArrayBuffer(44 + result.length * bytesPerSample);
+        let view = new DataView(bufferArr);
+        
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + result.length * bytesPerSample, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, format, true);
+        view.setUint16(22, numOfChan, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numOfChan * bytesPerSample, true);
+        view.setUint16(32, numOfChan * bytesPerSample, true);
+        view.setUint16(34, bitDepth, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, result.length * bytesPerSample, true);
+        
+        // Tulis Data Amplitudo Langsung Sebagai Struktur Float32 murni
+        let offset = 44;
+        for (let i = 0; i < result.length; i++, offset += 4) {
+            view.setFloat32(offset, result[i], true);
+        }
+        
+        return new Blob([view], { type: 'audio/wav' });
+    }
+
+    function interleave(inputL, inputR) {
+        let length = inputL.length + inputR.length;
+        let result = new Float32Array(length);
+        let index = 0, inputIndex = 0;
+        while (index < length) {
+            result[index++] = inputL[inputIndex];
+            result[index++] = inputR[inputIndex];
+            inputIndex++;
+        }
+        return result;
+    }
+
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+
+    // TOMBOL UNDUH
+    downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = finalAudioUrl;
+        a.download = 'master_sony_c800g_32bit.wav';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+</script>
+
+</body>
+</html>
